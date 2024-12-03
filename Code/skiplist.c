@@ -52,7 +52,7 @@ SkipList* skiplist_create(int nblevels) {
 Node** node_array_create(SkipList*d, int value){
 	Node** node_array;
 	int level = rng_get_value(&d->rng) + 1;
-	printf("node of level %i\n", level);
+	//printf("node of level %i\n", level);
 	node_array = malloc(level*sizeof(Node*));
 	if (!node_array)
 	{
@@ -76,28 +76,45 @@ Node** node_array_create(SkipList*d, int value){
 	
 }
 
+
+void delete_node_array(Node*** ptrToArrayOfPtrNode, SkipList* l){
+	Node** to_delete = *ptrToArrayOfPtrNode;
+	// iterate through each level of the node array of to_delete
+	int node_level = to_delete[0]->node_level;
+	for (int i = 0; i < node_level; i++){
+		Node** prev_node = (to_delete[i]->prev);
+		Node** next_node = (to_delete[i]->next);
+		prev_node[i]->next = next_node;
+		next_node[i]->prev = prev_node;
+	}
+	for (int i = 0; i < node_level; i++)
+	{
+		free(to_delete[i]);
+	}
+	free(to_delete);
+	*ptrToArrayOfPtrNode = NULL;
+	l->size -=1;
+
+}
+
 void skiplist_delete(SkipList** d) {
 	SkipList* l = *d;
 	Node** my_sentinel = l->sentinel;
-	while (my_sentinel[0]){
+	while (my_sentinel[0]->next[0]->value != -1){
 		Node** to_delete = my_sentinel[0]->next;
-		// iterate through each node of the node array of to_delete
-		for (int i = 0; i < to_delete[0]->node_level; i++){
-
-			Node* current_node = to_delete[0];
-			if (current_node->next)
-			{
-				Node* prev_node = (current_node->prev)[i];
-				Node* next_node = (current_node->next)[i];
-				prev_node->next = current_node ->next;
-				next_node->prev = current_node->prev;
-			}
-		}
+		// iterate through each level of the node array of to_delete
 		int node_level = to_delete[0]->node_level;
+		for (int i = 0; i < node_level; i++){
+			Node** prev_node = (to_delete[i]->prev);
+			Node** next_node = (to_delete[i]->next);
+			prev_node[i]->next = next_node;
+			next_node[i]->prev = prev_node;
+		}
 		for (int i = 0; i < node_level; i++)
 		{
 			free(to_delete[i]);
 		}
+		free(to_delete);
 		
 	}
 	free(l);
@@ -152,17 +169,6 @@ Node** find_next_node(Node**sentinel, Node** node, int* current_level){
 	return next_node;
 }
 
-void delete_node(Node*** ptrArrPtrNode){
-	Node** node = *ptrArrPtrNode;
-	int level = node[0]->node_level;
-	for (int i = 0; i < level; i++)
-	{
-		free(node[i]);
-	}
-	free(node);
-	*ptrArrPtrNode = NULL;
-	
-}
 
 bool node_has_no_follower(Node** node){
 	int node_level = node[0]->node_level;
@@ -174,30 +180,35 @@ bool node_has_no_follower(Node** node){
 	return true;
 }
 
-Node** find_prev_node_to_insert(Node** node, int highest_level, int val_to_insert){
-	printf("finding prev node\n");
+Node** find_prev_node_to_insert(Node** node, int highest_level, int val_to_insert, SkipList* l){
+	//printf("finding prev node\n");
 	int next_value_of_highest_level = node[highest_level]->next[highest_level]->value;
 
-	printf("next_value_of_highest_level = %i\n", next_value_of_highest_level);
+	//printf("next_value_of_highest_level = %i\n", next_value_of_highest_level);
 	if (next_value_of_highest_level > val_to_insert){
 		if (highest_level != 0){
-			return find_prev_node_to_insert(node, highest_level-1, val_to_insert);
+			return find_prev_node_to_insert(node, highest_level-1, val_to_insert, l);
 		}else{
 			return node;}
 	}
-	else{   
+	if(next_value_of_highest_level < val_to_insert){   
 		if (node_has_no_follower(node)){// all level points to sentinel
 			return node;
 		}
 		// If highest level > 0 and  points to sentinel THEN search lower level
 		if (highest_level > 0 && next_value_of_highest_level == -1){
-			return find_prev_node_to_insert(node, highest_level-1,val_to_insert);
+			return find_prev_node_to_insert(node, highest_level-1,val_to_insert, l);
 		}
 		// If highest level does not point to sentinel
 		else{ 
-			return find_prev_node_to_insert(node[highest_level]->next, highest_level, val_to_insert);
+			return find_prev_node_to_insert(node[highest_level]->next, highest_level, val_to_insert, l);
 		}
-		
+	}
+	else{
+		Node** duplicate_node = node[highest_level]->next;
+		Node** return_node = duplicate_node[0]->prev;
+		delete_node_array(&duplicate_node, l);
+		return return_node;
 	}
 }
 
@@ -209,34 +220,34 @@ void bind_nodes(Node** prev_node, Node** node_to_insert, Node** next_node, int i
 	node_to_insert[insert_level]->next = next_node;
 	next_node[insert_level]->prev = node_to_insert;
 	
-	Node** new_prev = node_to_insert[insert_level]->prev;
-	Node** new_next = node_to_insert[insert_level]->next;
-	printf("value[%i] level [%i]->next : %i\n", node_to_insert[0]->value, insert_level, new_next[insert_level]->value);
-	printf("value[%i] level [%i]->prev : %i\n", node_to_insert[0]->value, insert_level, new_prev[insert_level]->value);
+	//Node** new_prev = node_to_insert[insert_level]->prev;
+	//Node** new_next = node_to_insert[insert_level]->next;
+	//printf("value[%i] level [%i]->next : %i\n", node_to_insert[0]->value, insert_level, new_next[insert_level]->value);
+	//printf("value[%i] level [%i]->prev : %i\n", node_to_insert[0]->value, insert_level, new_prev[insert_level]->value);
 
-	printf("value_prev[%i] level [%i]->next : %i\n", prev_node[0]->value, insert_level, (prev_node[insert_level]->next)[insert_level]->value);
+	//printf("value_prev[%i] level [%i]->next : %i\n", prev_node[0]->value, insert_level, (prev_node[insert_level]->next)[insert_level]->value);
 	//printf("value_prev[%i] level [%i]->prev : %i\n", node_to_insert[0]->value, insert_level, new_prev[insert_level]->value);
 }
 
 void bind_arrays_of_nodes(Node**prev_node, Node** node_to_insert){
 	int level = node_to_insert[0]->node_level;
 	for (int i = 0; i < level; i++){
-		printf("Binding level %i\n", i);
+		//printf("Binding level %i\n", i);
 		if (i <= prev_node[0]->node_level-1)
 		{
 			Node** next_node = prev_node[i]->next;
 			bind_nodes(prev_node, node_to_insert, next_node, i);
 		}
 		else{
-			printf("Case prev_node shorter: %i\n", i);
+			//printf("Case prev_node shorter: %i\n", i);
 			int current_max_level = prev_node[0]->node_level-1;
 			while (current_max_level < i)
 			{
-				printf("current_max_level: %i\n", current_max_level);
+				//printf("current_max_level: %i\n", current_max_level);
 				prev_node = prev_node[i-1]->prev;
 				current_max_level = prev_node[0]->node_level-1;
 			}
-			printf("found prev_node %i has level == level of i : %i\n", prev_node[0]->value, i);
+			//printf("found prev_node %i has level == level of i : %i\n", prev_node[0]->value, i);
 			Node** next_node = prev_node[i]->next;
 			bind_nodes(prev_node, node_to_insert, next_node, i);
 		}
@@ -245,14 +256,14 @@ void bind_arrays_of_nodes(Node**prev_node, Node** node_to_insert){
 
 
 SkipList* skiplist_insert(SkipList* d, int value) {
-	printf("max_level = %i\n", d->max_level);
+	//printf("max_level = %i\n", d->max_level);
 	Node** new_node = node_array_create(d, value);
-	printf("new node = %i \n", new_node[0]->value);
-	Node** prev_node_to_insert = find_prev_node_to_insert(d->sentinel, d->max_level-1, value);
-	printf("FOUND PREV NODE %i\n", prev_node_to_insert[0]->value);
+	//printf("new node = %i \n", new_node[0]->value);
+	Node** prev_node_to_insert = find_prev_node_to_insert(d->sentinel, d->max_level-1, value,d);
+	//printf("FOUND PREV NODE %i\n", prev_node_to_insert[0]->value);
 
 	bind_arrays_of_nodes(prev_node_to_insert, new_node);
 	d->size +=1;
-	printf("***FINISHED	INSERT NODE %i****\n", value);
+	//printf("***FINISHED	INSERT NODE %i****\n", value);
 	return d;
 }
