@@ -72,6 +72,7 @@ unsigned int read_uint(FILE* input) {
   if (r == 1) {
     return v;
   }
+  
   perror("Unable to read uint from input file\n");
   abort();
 }
@@ -85,7 +86,9 @@ SkipList* buildlist(int num) {
 	char *constructfromfile = gettestfilename("construct", num);
 	input = fopen(constructfromfile, "r");
 	if (input!=NULL) {
-		d = skiplist_create(read_uint(input));
+		int size = (int) read_uint(input);
+		d = skiplist_create(size);
+		//d = skiplist_create(read_uint(input));
 		unsigned int nb_values = read_uint(input);
 		for (unsigned int i=0;i< nb_values; ++i) {
 			d = skiplist_insert(d, read_int(input));
@@ -105,8 +108,17 @@ SkipList* buildlist(int num) {
 /** Exercice 1.
  	Programming and test of skiplist construction.
  */
+
+void print_list(int i, void* environment){
+	fprintf((FILE*)environment, "%d ", i);
+}
+
+
 void test_construction(int num){
-	(void) num;
+	SkipList* l = buildlist(num);
+	printf("Skiplist (%i)\n", skiplist_size(l));
+	skiplist_map((const SkipList*) l, print_list, stdout);
+	skiplist_delete(&l);
 }
 
 /** Exercice 2.

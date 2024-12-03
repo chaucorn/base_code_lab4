@@ -35,5 +35,6 @@ unsigned int rng_upper_bound(const RNG *rng) {
 unsigned int rng_get_value(RNG *r){
 	unsigned int value;
 	for (value = 0; toss(r->xsubi) < MAX_RN/2 && value < r->max_value; ++value);
+	
 	return value;
 }
