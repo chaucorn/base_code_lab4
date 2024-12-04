@@ -54,24 +54,18 @@ Node** node_array_create(SkipList*d, int value){
 	int level = rng_get_value(&d->rng) + 1;
 	//printf("node of level %i\n", level);
 	node_array = malloc(level*sizeof(Node*));
-	if (!node_array)
-	{
+	if (!node_array){
 		fprintf(stderr, "Failed to allocated memory for a new node array\n");
 	}
 	
-	for (int i = 0; i < level; i++)
-	{
+	for (int i = 0; i < level; i++){
 		node_array[i] = malloc(sizeof(Node));
 	}
-	//printf("finished initializing nodes\n");
 	
-	for (int i = 0; i < level; i++)
-	{
+	for (int i = 0; i < level; i++){
 		node_array[i]->value = value;
 		node_array[i]->node_level = level;
 	}
-	//printf("finished assigning values to nodes\n");
-
 	return node_array;
 	
 }
@@ -110,8 +104,7 @@ void skiplist_delete(SkipList** d) {
 			prev_node[i]->next = next_node;
 			next_node[i]->prev = prev_node;
 		}
-		for (int i = 0; i < node_level; i++)
-		{
+		for (int i = 0; i < node_level; i++){
 			free(to_delete[i]);
 		}
 		free(to_delete);
@@ -143,9 +136,6 @@ void skiplist_map(const SkipList* d, ScanOperator f, void *user_data){
 		f(element[0]->value, user_data);
 	}
 }
-
-
-
 
 Node** find_next_node(Node**sentinel, Node** node, int* current_level){
 	Node** next_node;
@@ -180,35 +170,31 @@ bool node_has_no_follower(Node** node){
 	return true;
 }
 
-Node** find_prev_node_to_insert(Node** node, int highest_level, int val_to_insert, SkipList* l){
-	//printf("finding prev node\n");
+Node** find_prev_node_to_insert(Node** node, int highest_level, int val_to_insert, unsigned int *nboperations){
 	int next_value_of_highest_level = node[highest_level]->next[highest_level]->value;
-
-	//printf("next_value_of_highest_level = %i\n", next_value_of_highest_level);
-	if (next_value_of_highest_level > val_to_insert){
+	if (next_value_of_highest_level != -1)
+	{
+		*nboperations +=1;
+	}
+	
+	if (next_value_of_highest_level >= val_to_insert){
 		if (highest_level != 0){
-			return find_prev_node_to_insert(node, highest_level-1, val_to_insert, l);
+			return find_prev_node_to_insert(node, highest_level-1, val_to_insert, nboperations);
 		}else{
 			return node;}
 	}
-	if(next_value_of_highest_level < val_to_insert){   
+	else{   
 		if (node_has_no_follower(node)){// all level points to sentinel
 			return node;
 		}
 		// If highest level > 0 and  points to sentinel THEN search lower level
 		if (highest_level > 0 && next_value_of_highest_level == -1){
-			return find_prev_node_to_insert(node, highest_level-1,val_to_insert, l);
+			return find_prev_node_to_insert(node, highest_level-1,val_to_insert, nboperations);
 		}
 		// If highest level does not point to sentinel
 		else{ 
-			return find_prev_node_to_insert(node[highest_level]->next, highest_level, val_to_insert, l);
+			return find_prev_node_to_insert(node[highest_level]->next, highest_level, val_to_insert, nboperations);
 		}
-	}
-	else{
-		Node** duplicate_node = node[highest_level]->next;
-		Node** return_node = duplicate_node[0]->prev;
-		delete_node_array(&duplicate_node, l);
-		return return_node;
 	}
 }
 
@@ -233,37 +219,48 @@ void bind_arrays_of_nodes(Node**prev_node, Node** node_to_insert){
 	int level = node_to_insert[0]->node_level;
 	for (int i = 0; i < level; i++){
 		//printf("Binding level %i\n", i);
-		if (i <= prev_node[0]->node_level-1)
-		{
+		if (i <= prev_node[0]->node_level-1){
 			Node** next_node = prev_node[i]->next;
 			bind_nodes(prev_node, node_to_insert, next_node, i);
 		}
 		else{
-			//printf("Case prev_node shorter: %i\n", i);
 			int current_max_level = prev_node[0]->node_level-1;
 			while (current_max_level < i)
 			{
-				//printf("current_max_level: %i\n", current_max_level);
 				prev_node = prev_node[i-1]->prev;
 				current_max_level = prev_node[0]->node_level-1;
 			}
-			//printf("found prev_node %i has level == level of i : %i\n", prev_node[0]->value, i);
 			Node** next_node = prev_node[i]->next;
 			bind_nodes(prev_node, node_to_insert, next_node, i);
 		}
 	}
 }
 
+bool node_of_same_value(Node** node1, Node** node2){
+	return (node1[0]->value == node2[0]->value);
+}
 
 SkipList* skiplist_insert(SkipList* d, int value) {
-	//printf("max_level = %i\n", d->max_level);
 	Node** new_node = node_array_create(d, value);
-	//printf("new node = %i \n", new_node[0]->value);
-	Node** prev_node_to_insert = find_prev_node_to_insert(d->sentinel, d->max_level-1, value,d);
-	//printf("FOUND PREV NODE %i\n", prev_node_to_insert[0]->value);
-
+	unsigned int search_number = 0;
+	unsigned int* nboperations = &search_number;
+	Node** prev_node_to_insert = find_prev_node_to_insert(d->sentinel, d->max_level-1, value, nboperations);
+	// Case duplication
+	if (prev_node_to_insert[0]->next[0]->value == value){
+		Node** duplicate_node = prev_node_to_insert[0]->next;
+		delete_node_array(&duplicate_node, d);
+	}
 	bind_arrays_of_nodes(prev_node_to_insert, new_node);
 	d->size +=1;
-	//printf("***FINISHED	INSERT NODE %i****\n", value);
 	return d;
+}
+
+
+bool skiplist_search(const SkipList* d, int value, unsigned int *nb_operations){
+	Node** sentinel = d->sentinel;
+	Node** biggest_prev_node = find_prev_node_to_insert(sentinel, d->max_level-1, value, nb_operations);
+	if (biggest_prev_node[0]->value == value){
+		return true;
+	}
+	return false;
 }
