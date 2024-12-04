@@ -88,7 +88,6 @@ SkipList* buildlist(int num) {
 	if (input!=NULL) {
 		int size = (int) read_uint(input);
 		d = skiplist_create(size);
-		//d = skiplist_create(read_uint(input));
 		unsigned int nb_values = read_uint(input);
 		for (unsigned int i=0;i< nb_values; ++i) {
 			d = skiplist_insert(d, read_int(input));
@@ -125,7 +124,46 @@ void test_construction(int num){
  Programming and test of skiplist search operator.
  */
 void test_search(int num){
-	(void) num;
+	FILE *input;
+	char* construction_from_file = gettestfilename("search", num);
+	input = fopen(construction_from_file, "r");
+	if (input!=NULL) {
+		int nb_searches = (int) read_uint(input);
+		const SkipList* l =  buildlist(num);
+		int nb_found = 0;
+		unsigned int  total_operation = 0;
+		unsigned int min_operation = skiplist_size(l);
+		unsigned int max_operation = 0;
+		for (int i=0;i< nb_searches; ++i) {
+			int value = read_int(input);
+			unsigned int search_start = 0;
+			unsigned int *nboperations = &search_start;
+			if (skiplist_search(l, value, nboperations)){
+				printf("%i -> true\n");
+				nb_found += 1;
+			}
+			printf("%i -> false\n");
+
+			min_operation = (*nboperations < min_operation)?*nboperations:min_operation;
+			max_operation = (*nboperations > max_operation)?*nboperations:max_operation;
+			total_operation += *nboperations;
+		}
+		printf("Statistics : \n");
+		printf("\tSize of the list : %i\n", skiplist_size(l));
+		printf("Search %i values :\n", nb_searches);
+		printf("\tFound %i\n", nb_found);
+		printf("\tNot found %i\n", nb_searches - nb_found);
+		printf("\tMin number of operations %i\n", min_operation);
+		printf("\tMax number of operations %i\n", max_operation);
+		printf("\tMean number of operations %i\n", total_operation/nb_searches);
+
+	} else {
+		printf("Unable to open file %s\n", construction_from_file);
+		free(construction_from_file);
+		exit (1);
+	}
+	free(construction_from_file);
+	fclose(input);
 }
 
 /** Exercice 3.

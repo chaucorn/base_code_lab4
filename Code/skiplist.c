@@ -259,7 +259,7 @@ SkipList* skiplist_insert(SkipList* d, int value) {
 bool skiplist_search(const SkipList* d, int value, unsigned int *nb_operations){
 	Node** sentinel = d->sentinel;
 	Node** biggest_prev_node = find_prev_node_to_insert(sentinel, d->max_level-1, value, nb_operations);
-	if (biggest_prev_node[0]->value == value){
+	if (biggest_prev_node[0]->next[0]->value == value){
 		return true;
 	}
 	return false;
