@@ -142,7 +142,9 @@ void test_search(int num){
 				printf("%i -> true\n");
 				nb_found += 1;
 			}
-			printf("%i -> false\n");
+			else{
+				printf("%i -> false\n");
+			}
 
 			min_operation = (*nboperations < min_operation)?*nboperations:min_operation;
 			max_operation = (*nboperations > max_operation)?*nboperations:max_operation;
