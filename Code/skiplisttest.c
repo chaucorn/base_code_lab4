@@ -235,7 +235,7 @@ void test_remove(int num){
 			int value = read_int(input);
 			l = skiplist_remove(l, value);
 		}
-		printf("Skiplist after deletion (%i)\n", skiplist_size((const SkipList*) l));
+		printf("Skiplist after removal (%i)\n", skiplist_size((const SkipList*) l));
 		iterate_on_skiplist(l, BACKWARD_ITERATOR, print_list, stdout);
 		skiplist_delete(&l);
 
