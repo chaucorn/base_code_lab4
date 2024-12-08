@@ -205,10 +205,10 @@ int skiplist_iterator_value(SkipListIterator* it);
 
 /** @} */
 
-
+bool search_iterate_on_skiplist ( SkipList * d, IteratorDirection direction, int val, unsigned int* nbOperations );
 
 /** @} */
-
+void iterate_on_skiplist ( SkipList * d, IteratorDirection direction, ScanOperator f, void* environment);
 
 void printbylevel(SkipList* d);
 

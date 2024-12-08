@@ -139,11 +139,11 @@ void test_search(int num){
 			unsigned int search_start = 0;
 			unsigned int *nboperations = &search_start;
 			if (skiplist_search(l, value, nboperations)){
-				printf("%i -> true\n");
+				printf("%i -> true\n", value);
 				nb_found += 1;
 			}
 			else{
-				printf("%i -> false\n");
+				printf("%i -> false\n", value);
 			}
 
 			min_operation = (*nboperations < min_operation)?*nboperations:min_operation;
@@ -172,14 +172,80 @@ void test_search(int num){
  Programming and test of naïve search operator using iterators.
  */
 void test_search_iterator(int num){
-	(void) num;
+	FILE* input;
+	char* construction_from_file = gettestfilename("search", num);
+	input = fopen(construction_from_file, "r");
+	if (input!=NULL) {
+		int nb_searches = (int) read_uint(input);
+		SkipList* l =  buildlist(num);
+		int nb_found = 0;
+		unsigned int  total_operation = 0;
+		unsigned int min_operation = skiplist_size(l);
+		unsigned int max_operation = 0;
+		for (int i=0;i< nb_searches; ++i) {
+			int value = read_int(input);
+			unsigned int search_start = 0;
+			unsigned int *nboperations = &search_start;
+			if (search_iterate_on_skiplist(l, FORWARD_ITERATOR, value, nboperations)){
+				//printf("%i -> true\n", value);
+				nb_found += 1;
+			}
+			else{
+				//printf("%i -> false\n", value);
+			}
+
+			min_operation = (*nboperations < min_operation)?*nboperations:min_operation;
+			max_operation = (*nboperations > max_operation)?*nboperations:max_operation;
+			total_operation += *nboperations;
+		}
+		printf("Statistics of Iterator Search: \n");
+		printf("\tSize of the list : %i\n", skiplist_size(l));
+		printf("Search %i values :\n", nb_searches);
+		printf("\tFound %i\n", nb_found);
+		printf("\tNot found %i\n", nb_searches - nb_found);
+		printf("\tMin number of operations %i\n", min_operation);
+		printf("\tMax number of operations %i\n", max_operation);
+		printf("\tMean number of operations %i\n", total_operation/nb_searches);
+
+	} else {
+		printf("Unable to open file %s\n", construction_from_file);
+		free(construction_from_file);
+		exit (1);
+	}
+	free(construction_from_file);
+	fclose(input);
+
 }
 
 /** Exercice 4.
  Programming and test of skiplist remove operator.
  */
 void test_remove(int num){
-	(void) num;
+	FILE* input;
+	char* construction_from_file = gettestfilename("remove", num);
+	input = fopen(construction_from_file, "r");
+	if (input!=NULL) {
+		SkipList* l =  buildlist(num);
+		printf("Skiplist (%i)\n", skiplist_size((const SkipList*) l));
+		skiplist_map((const SkipList*) l, print_list, stdout);
+		printf("\n");
+		int nb_to_delete = (int) read_uint(input);
+
+		for (int i=0;i< nb_to_delete; i++) {
+			int value = read_int(input);
+			l = skiplist_remove(l, value);
+		}
+		printf("Skiplist after deletion (%i)\n", skiplist_size((const SkipList*) l));
+		iterate_on_skiplist(l, BACKWARD_ITERATOR, print_list, stdout);
+		skiplist_delete(&l);
+
+	} else {
+		printf("Unable to open file %s\n", construction_from_file);
+		free(construction_from_file);
+		exit (1);
+	}
+	free(construction_from_file);
+	fclose(input);
 }
 
 /** Function you can use to generate dataset for testing.

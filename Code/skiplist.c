@@ -52,7 +52,6 @@ SkipList* skiplist_create(int nblevels) {
 Node** node_array_create(SkipList*d, int value){
 	Node** node_array;
 	int level = rng_get_value(&d->rng) + 1;
-	//printf("node of level %i\n", level);
 	node_array = malloc(level*sizeof(Node*));
 	if (!node_array){
 		fprintf(stderr, "Failed to allocated memory for a new node array\n");
@@ -205,20 +204,11 @@ void bind_nodes(Node** prev_node, Node** node_to_insert, Node** next_node, int i
 	//bind to next node
 	node_to_insert[insert_level]->next = next_node;
 	next_node[insert_level]->prev = node_to_insert;
-	
-	//Node** new_prev = node_to_insert[insert_level]->prev;
-	//Node** new_next = node_to_insert[insert_level]->next;
-	//printf("value[%i] level [%i]->next : %i\n", node_to_insert[0]->value, insert_level, new_next[insert_level]->value);
-	//printf("value[%i] level [%i]->prev : %i\n", node_to_insert[0]->value, insert_level, new_prev[insert_level]->value);
-
-	//printf("value_prev[%i] level [%i]->next : %i\n", prev_node[0]->value, insert_level, (prev_node[insert_level]->next)[insert_level]->value);
-	//printf("value_prev[%i] level [%i]->prev : %i\n", node_to_insert[0]->value, insert_level, new_prev[insert_level]->value);
 }
 
 void bind_arrays_of_nodes(Node**prev_node, Node** node_to_insert){
 	int level = node_to_insert[0]->node_level;
 	for (int i = 0; i < level; i++){
-		//printf("Binding level %i\n", i);
 		if (i <= prev_node[0]->node_level-1){
 			Node** next_node = prev_node[i]->next;
 			bind_nodes(prev_node, node_to_insert, next_node, i);
@@ -263,4 +253,110 @@ bool skiplist_search(const SkipList* d, int value, unsigned int *nb_operations){
 		return true;
 	}
 	return false;
+}
+
+SkipList* skiplist_remove(SkipList* d, int value){
+	Node** sentinel = d->sentinel;
+	unsigned int nb_operations = 0;
+	//printf("Finding prev_node\n");
+
+	Node** biggest_prev_node = find_prev_node_to_insert(sentinel, d->max_level-1, value, &nb_operations);
+	//printf("found prev_node\n");
+	Node** to_remove = NULL;
+	// If found the node
+	if (biggest_prev_node[0]->next[0]->value == value){
+		
+		to_remove = biggest_prev_node[0]->next;
+		//printf("Found %i in the list\n", to_remove[0]->value);
+		delete_node_array(&to_remove, d);
+	}
+	//printf("Not Found %i in the list\n", value);
+	return d;
+}
+
+/*-----SkipList Iterator------*/
+struct s_SkipListIterator{
+	SkipList* collection;
+	SkipListIterator* (*begin) (SkipListIterator*);
+	SkipListIterator* (*next) (SkipListIterator*);
+	Node** current;
+	IteratorDirection direction;
+};
+
+SkipListIterator* skiplist_iterator_begin(SkipListIterator* it){
+	SkipList* l = it->collection;
+	Node** sentinel = l->sentinel;
+	if (it->direction == FORWARD_ITERATOR)
+	{
+		it->current = sentinel[0]->next;
+	}else{
+		it->current = sentinel[0]->prev;
+	}
+	return it;
+}
+SkipListIterator* skiplist_iterator_next(SkipListIterator* it){
+	if(it->direction == FORWARD_ITERATOR){
+		it->current = it->current[0]->next;
+	}else {
+		it->current = it->current[0]->prev;
+	}
+	return it;
+}
+
+bool skiplist_iterator_end(SkipListIterator* it){
+	SkipList* l = it->collection;
+	Node** sentinel = l->sentinel;
+	if (it->current == sentinel)
+	{
+		return true;
+	}
+	return false;
+	
+}
+
+int skiplist_iterator_value(SkipListIterator* it){
+	return it->current[0]->value;
+}
+
+SkipListIterator* skiplist_iterator_create(SkipList* d, IteratorDirection direction){
+	SkipListIterator* t = malloc(sizeof(SkipListIterator));
+	t->collection = d;
+	t->begin = skiplist_iterator_begin;
+	t->direction = direction;
+	t->next = skiplist_iterator_next;
+	if (direction == FORWARD_ITERATOR)
+	{
+		t->current = d->sentinel[0]->next;
+	}else{
+		t->current = d->sentinel[0]->prev;
+	}
+	return t;
+}
+
+bool search_iterate_on_skiplist ( SkipList * d, IteratorDirection direction, int val, unsigned int* nbOperations ) {
+SkipListIterator * e = skiplist_iterator_create (d , direction) ;
+	for ( e = skiplist_iterator_begin ( e);! skiplist_iterator_end (e ); e = skiplist_iterator_next (e)){
+		(*nbOperations) ++;
+		if (skiplist_iterator_value(e) == val){
+			return true;
+			free(e); 
+		}	
+	}
+	free(e);
+	return false;
+}
+/*
+void skiplist_map(const SkipList* d, ScanOperator f, void *user_data){
+	Node** sentinel = d->sentinel;
+	for(Node** element = sentinel[0]->next; element != d->sentinel; element = element[0]->next){
+		f(element[0]->value, user_data);
+	}
+}
+*/
+void iterate_on_skiplist ( SkipList * d, IteratorDirection direction,  ScanOperator f, void* environment){
+	SkipListIterator * e = skiplist_iterator_create (d , direction) ;
+	for ( e = skiplist_iterator_begin ( e);! skiplist_iterator_end (e ); e = skiplist_iterator_next (e)){
+		f(skiplist_iterator_value(e), environment);	
+	}
+	free(e);
 }
