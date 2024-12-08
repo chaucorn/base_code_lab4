@@ -6,8 +6,6 @@
 #include "skiplist.h"
 #include "rng.h"
 typedef struct s_Node Node;
-typedef struct s_Link Link;
-
 struct s_Node{
 	int value;
 	Node** prev;

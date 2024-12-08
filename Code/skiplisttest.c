@@ -5,6 +5,7 @@
 #include "skiplist.h"
 #include "rng.h"
 
+
 /**
  *	@defgroup SkipListTest Test program for SkipList Implantation
  *  @brief Definition of the SkipList type and operators
@@ -221,21 +222,22 @@ void test_search_iterator(int num){
  Programming and test of skiplist remove operator.
  */
 void test_remove(int num){
+
 	FILE* input;
 	char* construction_from_file = gettestfilename("remove", num);
 	input = fopen(construction_from_file, "r");
 	if (input!=NULL) {
 		SkipList* l =  buildlist(num);
-		printf("Skiplist (%i)\n", skiplist_size((const SkipList*) l));
-		skiplist_map((const SkipList*) l, print_list, stdout);
-		printf("\n");
+		//printf("Skiplist (%i)\n", skiplist_size((const SkipList*) l));
+		
+		//printf("\n");
 		int nb_to_delete = (int) read_uint(input);
-
+        //printf("Remove %i values\n", nb_to_delete);
 		for (int i=0;i< nb_to_delete; i++) {
 			int value = read_int(input);
 			l = skiplist_remove(l, value);
 		}
-		printf("Skiplist after removal (%i)\n", skiplist_size((const SkipList*) l));
+		printf("Skiplist (%i)\n", skiplist_size((const SkipList*) l));
 		iterate_on_skiplist(l, BACKWARD_ITERATOR, print_list, stdout);
 		skiplist_delete(&l);
 
@@ -246,6 +248,7 @@ void test_remove(int num){
 	}
 	free(construction_from_file);
 	fclose(input);
+	
 }
 
 /** Function you can use to generate dataset for testing.
